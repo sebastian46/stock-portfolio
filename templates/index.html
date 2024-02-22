@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Information</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<style>
+    body {
+        padding-top: 20px;
+    }
+    .card-header {
+        background-color: #007bff;
+        color: white;
+    }
+    .card {
+        margin-bottom: 20px;
+    }
+</style>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Stock Dashboard</a>
+    </nav>
+    <div class="container mt-5">
+        <div class="mb-4">
+            <h2>Create or Select a Stock List</h2>
+            <form id="createListForm" class="mb-3">
+                <div class="form-row align-items-center">
+                    <div class="col-auto">
+                        <input type="text" class="form-control mb-2" id="listName" placeholder="List Name">
+                    </div>
+                    <div class="col-auto">
+                        <input type="text" class="form-control mb-2" id="listTickers" placeholder="Tickers (comma-separated)">
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary mb-2">Create List</button>
+                    </div>
+                </div>
+            </form>
+            <select id="listSelector" class="form-control mb-4">
+                <option value="">Select a list...</option>
+                <!-- Options will be dynamically populated -->
+            </select>
+        </div>
+        <canvas id="portfolioReturnsChart" width="800" height="400"></canvas>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchStockLists();
+            document.getElementById('createListForm').addEventListener('submit', createStockList);
+            document.getElementById('listSelector').addEventListener('change', handleListSelectionChange);
+        });
+        
+        function fetchStockLists() {
+            fetch('/api/stock-lists')
+                .then(response => response.json())
+                .then(data => {
+                    const listSelector = document.getElementById('listSelector');
+                    // Clear existing options first
+                    listSelector.innerHTML = '<option value="">Select a list...</option>';
+                    data.forEach(list => {
+                        const option = document.createElement('option');
+                        option.value = list.name; // Assuming you'll identify lists by name
+                        option.textContent = list.name;
+                        listSelector.appendChild(option);
+                    });
+                });
+        }
+        
+        function createStockList(event) {
+            event.preventDefault();
+            const name = document.getElementById('listName').value;
+            const tickers = document.getElementById('listTickers').value.split(',');
+            fetch('/api/stock-lists', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({name: name, tickers: tickers})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                // Refresh the list of stock lists
+                fetchStockLists();
+                // Reset form
+                document.getElementById('createListForm').reset();
+            })
+            .catch(error => console.error('Error creating stock list:', error));
+        }
+        
+        function handleListSelectionChange() {
+            const listName = document.getElementById('listSelector').value;
+            if (listName) {
+                fetchStockListReturnsAndRenderGraph(listName);
+            }
+        }
+        
+        function fetchStockListReturnsAndRenderGraph(listName) {
+            fetch('/api/stock-list-returns', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ listName: listName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                const ctx = document.getElementById('portfolioReturnsChart').getContext('2d');
+                // Check if a Chart instance already exists on the canvas
+                if (window.chartInstance) {
+                    window.chartInstance.destroy(); // Destroy the existing Chart instance
+                }
+                window.chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [{
+                            label: 'Portfolio Cumulative Returns',
+                            data: data.returns,  // Already in percentage
+                            borderColor: 'rgb(75, 192, 192)',
+                            fill: false,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        return value + '%';  // Add '%' to the Y-axis labels
+                                    }
+                                }
+                            }
+                        },
+                        tooltips: {
+                            callbacks: {
+                                label: function(tooltipItem, chart) {
+                                    var label = chart.datasets[tooltipItem.datasetIndex].label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += tooltipItem.yLabel.toFixed(2) + '%';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                });
+
+            });
+        }
+    
+    </script>
+</body>
+</html>

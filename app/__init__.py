@@ -1,6 +1,6 @@
 from flask import Flask
 from .extensions import db
-from .routes.stock_routes import stock_bp
+# from .routes.stock_routes import stock_bp
 from .routes.routes import home_bp
 
 def create_app():
@@ -10,7 +10,7 @@ def create_app():
 
     db.init_app(app)
 
-    app.register_blueprint(stock_bp)
+    # app.register_blueprint(stock_bp)
     app.register_blueprint(home_bp)
 
     with app.app_context():

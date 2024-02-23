@@ -1,11 +1,11 @@
 from flask import jsonify, request
 import yfinance as yf
+from get_all_tickers import get_tickers as gt
+
 from datetime import date
 import pandas as pd
 from .models import StockList
 from .extensions import db
-import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 def get_stock_data_api(ticker):
     stock = yf.Ticker(ticker)
@@ -27,7 +27,6 @@ def get_stock_list_returns():
     
     # Assuming tickers are stored as a comma-separated string
     tickers = stock_list.tickers.replace(' ', '').split(',')
-    logging.debug('Tickers: %s', tickers)
 
     start_date = data.get('start', '2020-01-06')  # Default start date
     end_date = data.get('end', date.today().strftime('%Y-%m-%d'))  # Default end date
@@ -50,40 +49,24 @@ def get_stock_list_returns():
     }
     return jsonify(response_data)
 
-# def get_stock_data(ticker):
-#     stock = yf.Ticker(ticker)
-#     info = stock.info  # Fetches a lot of information in a single call
+def get_all_stocks():
+    import pandas as pd
+    from yahoo_fin import stock_info as si
 
-#     # Get dividend data
-#     dividends = stock.dividends.tail(1).iloc[-1] if not stock.dividends.empty else 0
 
-#     # Calculate percentage changes for various periods
-#     hist = stock.history(period="5y")  # Fetch history once for all calculations
-#     pct_change_1m = hist['Close'].pct_change(periods=30).iloc[-1] * 100
-#     pct_change_6m = hist['Close'].pct_change(periods=180).iloc[-1] * 100
-#     pct_change_12m = hist['Close'].pct_change(periods=365).iloc[-1] * 100
-#     pct_change_5y = hist['Close'].iloc[-1] / hist['Close'].iloc[0] * 100 - 100
+    # gather stock symbols from major US exchanges
+    df1 = pd.DataFrame( si.tickers_sp500() )
+    df2 = pd.DataFrame( si.tickers_nasdaq() )
+    df3 = pd.DataFrame( si.tickers_dow() )
+    df4 = pd.DataFrame( si.tickers_other() )
 
-#     # Format market cap
-#     market_cap = info.get("marketCap", 0)
-#     if market_cap != 0:
-#         formatted_market_cap = market_cap / 1_000_000_000
-#     else:
-#         formatted_market_cap = 0
+    # convert DataFrame to list, then to sets
+    sym1 = set( symbol for symbol in df1[0].values.tolist() )
+    sym2 = set( symbol for symbol in df2[0].values.tolist() )
+    sym3 = set( symbol for symbol in df3[0].values.tolist() )
+    sym4 = set( symbol for symbol in df4[0].values.tolist() )
 
-#     data = {
-#         "symbol": ticker,
-#         "current_price": hist["Close"].iloc[-1],
-#         "fifty_two_week_high": info.get("fiftyTwoWeekHigh",0),
-#         "fifty_two_week_low": info.get("fiftyTwoWeekLow", 0),
-#         "dividends": dividends,
-#         "dividend_yield": info.get("dividendYield", 0) * 100 if info.get("dividendYield") else 0,
-#         "pe_ratio": info.get("trailingPE", 0),
-#         "eps": info.get("trailingEps", 0),
-#         "market_cap": formatted_market_cap,
-#         "pct_change_1m": pct_change_1m,
-#         "pct_change_6m": pct_change_6m,
-#         "pct_change_12m": pct_change_12m,
-#         "pct_change_5y": pct_change_5y
-#     }
-#     return data
+    # join the 4 sets into one. Because it's a set, there will be no duplicate symbols
+    symbols = set.union( sym1, sym2, sym3, sym4 )
+
+    return {'stocks': list(symbols)}

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
 from ..extensions import db
 from ..models import StockList
-from ..stock_data import get_stock_data_api, get_stock_list_returns
+from ..stock_data import get_stock_data_api, get_stock_list_returns, get_all_stocks
 from datetime import date
 
 home_bp = Blueprint('home', __name__)
@@ -39,3 +39,7 @@ def stock_lists():
         db.session.add(stock_list)
         db.session.commit()
         return jsonify({'message': 'Stock list created successfully', 'id': stock_list.id}), 201
+
+@home_bp.route('/api/available-stocks', methods=['GET'])
+def get_stocks():
+    return get_all_stocks()

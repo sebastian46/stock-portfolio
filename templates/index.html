@@ -40,6 +40,15 @@
                     </div>
                 </div>
             </form>
+            <div>
+                <select id="stockDropdown">
+                    <option value="">Select a stock...</option>
+                    <!-- Options will be dynamically populated -->
+                </select>
+                <input type="text" id="customStockInput" placeholder="Enter custom stock symbol">
+                <button onclick="fetchStockPrice()">Get Price Chart</button>
+            </div>
+            <canvas id="stockPriceChartId" width="800" height="400"></canvas>
             <select id="listSelector" class="form-control mb-4">
                 <option value="">Select a list...</option>
                 <!-- Options will be dynamically populated -->
@@ -155,6 +164,125 @@
             });
         }
     
+    </script>
+    <!-- <script>
+        function fetchStockPrice() {
+            const selectedStock = document.getElementById('stockDropdown').value;
+            const customStock = document.getElementById('customStockInput').value;
+            const stockSymbol = customStock || selectedStock;
+            if (!stockSymbol) {
+                alert('Please select or enter a stock symbol.');
+                return;
+            }
+            fetch(`/api/stock-data/${stockSymbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    renderStockPriceChart(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching stock price:', error);
+                    alert('Failed to fetch stock price. Please try again later.');
+                });
+        }
+
+        function renderStockPriceChart(data) {
+            const ctx = document.getElementById('stockPriceChartId').getContext('2d');
+            // Clear existing chart if any
+            if (window.stockPriceChart) {
+                window.stockPriceChart.destroy();
+            }
+            window.stockPriceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        // label: `${data.symbol} Price Chart`,
+                        data: data.prices,
+                        borderColor: 'blue',
+                        fill: false,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                        }
+                    }
+                }
+            });
+        }
+    </script> -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch available stocks and populate the dropdown menu
+            fetchAvailableStocks();
+        });
+
+        function fetchAvailableStocks() {
+            fetch('/api/available-stocks')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    const stockDropdown = document.getElementById('stockDropdown');
+                    // Clear existing options first
+                    stockDropdown.innerHTML = '<option value="">Select a stock...</option>';
+                    // Populate dropdown with available stocks
+                    data.stocks.forEach(stock => {
+                        const option = document.createElement('option');
+                        option.value = stock;
+                        option.textContent = `${stock}`;
+                        stockDropdown.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching available stocks:', error));
+        }
+
+        function fetchStockPrice() {
+            const selectedStock = document.getElementById('stockDropdown').value;
+            const customStock = document.getElementById('customStockInput').value;
+            const stockSymbol = customStock || selectedStock;
+            if (!stockSymbol) {
+                alert('Please select or enter a stock symbol.');
+                return;
+            }
+            fetch(`/api/stock-data/${stockSymbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    renderStockPriceChart(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching stock price:', error);
+                    alert('Failed to fetch stock price. Please try again later.');
+                });
+        }
+
+        function renderStockPriceChart(data) {
+            const ctx = document.getElementById('stockPriceChartId').getContext('2d');
+            // Clear existing chart if any
+            if (window.stockPriceChart) {
+                window.stockPriceChart.destroy();
+            }
+            window.stockPriceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        // label: `${data.symbol} Price Chart`,
+                        data: data.prices,
+                        borderColor: 'blue',
+                        fill: false,
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                        }
+                    }
+                }
+            });
+        }
+
     </script>
 </body>
 </html>

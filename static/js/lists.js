@@ -28,13 +28,12 @@ function handleListSelectionChange() {
 }
 
 function fetchStockListReturnsAndRenderGraph(listId) {
-    fetch('/api/stock-list-returns', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ listId: listId })
-    })
+    // Construct the URL with query parameters for start and end dates
+    const startDate = '2020-01-06'; // Example start date, adjust as needed
+    const endDate = new Date().toISOString().slice(0, 10); // Today's date in YYYY-MM-DD format
+    const url = `/api/list-returns/${listId}?start=${startDate}&end=${endDate}`;
+    
+    fetch(url)
     .then(response => response.json())
     .then(data => {
         // console.log(data);

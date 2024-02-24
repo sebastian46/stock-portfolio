@@ -27,7 +27,6 @@ function setupAutocomplete(inputField) {
         fetch(`/api/available-${assetType}?search=${encodeURIComponent(searchQuery)}`)
             .then(response => response.json())
             .then(data => {
-                console.log(data);
                 displaySuggestions(data[assetType], inputField, suggestionsBoxId);
             })
             .catch(error => console.error(`Error fetching available ${assetType}:`, error));
@@ -79,11 +78,17 @@ function fetchAssetPrice(assetType) {
 
 function renderPriceChart(data, chartId, label) {
     const ctx = document.getElementById(chartId).getContext('2d');
-    // Clear existing chart if any
-    if (window.stockPriceChart) {
-        window.stockPriceChart.destroy();
+    
+    // Construct the variable name based on chartId
+    const chartVarName = chartId + 'PriceChart';
+
+    // Check if a chart instance already exists and destroy it if so
+    if (window[chartVarName]) {
+        window[chartVarName].destroy();
     }
-    window.stockPriceChart = new Chart(ctx, {
+
+    // Create a new chart instance and assign it to the dynamically named window variable
+    window[chartVarName] = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.dates,

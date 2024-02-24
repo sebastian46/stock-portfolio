@@ -18,6 +18,30 @@
     .card {
         margin-bottom: 20px;
     }
+
+    .suggestions-dropdown {
+        position: absolute;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        width: 90%;
+        background-color: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        border-radius: 0 0 .25rem .25rem;
+    }
+
+    .suggestions-dropdown div {
+        padding: .375rem .75rem;
+        cursor: pointer;
+    }
+
+    .suggestions-dropdown div:hover {
+        background-color: #f2f2f2;
+    }
+
+    canvas {
+        display: none;
+    }
 </style>
 
 <body>
@@ -26,263 +50,70 @@
     </nav>
     <div class="container mt-5">
         <div class="mb-4">
-            <h2>Create or Select a Stock List</h2>
+            <h2>Create an Asset List</h2>
             <form id="createListForm" class="mb-3">
-                <div class="form-row align-items-center">
-                    <div class="col-auto">
+                <div class="row align-items-center">
+                    <div class="col-3">
                         <input type="text" class="form-control mb-2" id="listName" placeholder="List Name">
                     </div>
-                    <div class="col-auto">
-                        <input type="text" class="form-control mb-2" id="listTickers" placeholder="Tickers (comma-separated)">
+                    <div class="col-4">
+                        <input type="text" class="form-control mb-2 mr-1" id="listTickers" placeholder="Tickers (comma-separated)">
+                        <select class="form-control mb-2" id="tickerType">
+                            <option value="stock">Stock</option>
+                            <option value="crypto">Crypto</option>
+                        </select>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-2">
                         <button type="submit" class="btn btn-primary mb-2">Create List</button>
                     </div>
                 </div>
             </form>
-            <div>
-                <select id="stockDropdown">
-                    <option value="">Select a stock...</option>
-                    <!-- Options will be dynamically populated -->
-                </select>
-                <input type="text" id="customStockInput" placeholder="Enter custom stock symbol">
-                <button onclick="fetchStockPrice()">Get Price Chart</button>
+        </div>
+
+        <div class="mb-4 asset-input-group" data-asset-type="stock">
+            <h2>Select a stock</h2>
+            <div class="row">
+                <div class="col-3">
+                    <input type="text" id="stockInput" class="form-control asset-input" placeholder="Enter stock symbol" autocomplete="off">
+                    <div id="stockSuggestions" class="suggestions-dropdown"></div>
+                </div>
+                <div class="col-3">
+                    <input type="text" id="customStockInput" class="form-control" placeholder="Enter custom stock symbol">
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-primary fetch-price-btn">Get Price Chart</button>
+                </div>
             </div>
             <canvas id="stockPriceChartId" width="800" height="400"></canvas>
+        </div>
+
+        <div class="mb-4 asset-input-group" data-asset-type="crypto">
+            <h2>Select a cryptocurrency</h2>
+            <div class="row">
+                <div class="col-3">
+                    <input type="text" id="cryptoInput" class="form-control asset-input" placeholder="Enter crypto symbol" autocomplete="off">
+                    <div id="cryptoSuggestions" class="suggestions-dropdown"></div>
+                </div>
+                <div class="col-3">
+                    <input type="text" id="customCryptoInput" class="form-control" placeholder="Enter custom crypto symbol">
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-primary fetch-price-btn">Get Price Chart</button>
+                </div>
+            </div>
+            <canvas id="cryptoPriceChartId" width="800" height="400"></canvas>
+        </div>
+        
+        <div class="mb-4">
+            <h2>Select a stock (or others) list</h2>
             <select id="listSelector" class="form-control mb-4">
                 <option value="">Select a list...</option>
                 <!-- Options will be dynamically populated -->
             </select>
+            <canvas id="portfolioReturnsChart" width="800" height="400"></canvas>
         </div>
-        <canvas id="portfolioReturnsChart" width="800" height="400"></canvas>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchStockLists();
-            document.getElementById('createListForm').addEventListener('submit', createStockList);
-            document.getElementById('listSelector').addEventListener('change', handleListSelectionChange);
-        });
-        
-        function fetchStockLists() {
-            fetch('/api/stock-lists')
-                .then(response => response.json())
-                .then(data => {
-                    const listSelector = document.getElementById('listSelector');
-                    // Clear existing options first
-                    listSelector.innerHTML = '<option value="">Select a list...</option>';
-                    data.forEach(list => {
-                        const option = document.createElement('option');
-                        option.value = list.name; // Assuming you'll identify lists by name
-                        option.textContent = list.name;
-                        listSelector.appendChild(option);
-                    });
-                });
-        }
-        
-        function createStockList(event) {
-            event.preventDefault();
-            const name = document.getElementById('listName').value;
-            const tickers = document.getElementById('listTickers').value.split(',');
-            fetch('/api/stock-lists', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({name: name, tickers: tickers})
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.message);
-                // Refresh the list of stock lists
-                fetchStockLists();
-                // Reset form
-                document.getElementById('createListForm').reset();
-            })
-            .catch(error => console.error('Error creating stock list:', error));
-        }
-        
-        function handleListSelectionChange() {
-            const listName = document.getElementById('listSelector').value;
-            if (listName) {
-                fetchStockListReturnsAndRenderGraph(listName);
-            }
-        }
-        
-        function fetchStockListReturnsAndRenderGraph(listName) {
-            fetch('/api/stock-list-returns', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ listName: listName })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                const ctx = document.getElementById('portfolioReturnsChart').getContext('2d');
-                // Check if a Chart instance already exists on the canvas
-                if (window.chartInstance) {
-                    window.chartInstance.destroy(); // Destroy the existing Chart instance
-                }
-                window.chartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.dates,
-                        datasets: [{
-                            label: 'Portfolio Cumulative Returns',
-                            data: data.returns,  // Already in percentage
-                            borderColor: 'rgb(75, 192, 192)',
-                            fill: false,
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                ticks: {
-                                    callback: function(value, index, values) {
-                                        return value + '%';  // Add '%' to the Y-axis labels
-                                    }
-                                }
-                            }
-                        },
-                        tooltips: {
-                            callbacks: {
-                                label: function(tooltipItem, chart) {
-                                    var label = chart.datasets[tooltipItem.datasetIndex].label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    label += tooltipItem.yLabel.toFixed(2) + '%';
-                                    return label;
-                                }
-                            }
-                        }
-                    }
-                });
-
-            });
-        }
-    
-    </script>
-    <!-- <script>
-        function fetchStockPrice() {
-            const selectedStock = document.getElementById('stockDropdown').value;
-            const customStock = document.getElementById('customStockInput').value;
-            const stockSymbol = customStock || selectedStock;
-            if (!stockSymbol) {
-                alert('Please select or enter a stock symbol.');
-                return;
-            }
-            fetch(`/api/stock-data/${stockSymbol}`)
-                .then(response => response.json())
-                .then(data => {
-                    renderStockPriceChart(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching stock price:', error);
-                    alert('Failed to fetch stock price. Please try again later.');
-                });
-        }
-
-        function renderStockPriceChart(data) {
-            const ctx = document.getElementById('stockPriceChartId').getContext('2d');
-            // Clear existing chart if any
-            if (window.stockPriceChart) {
-                window.stockPriceChart.destroy();
-            }
-            window.stockPriceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.dates,
-                    datasets: [{
-                        // label: `${data.symbol} Price Chart`,
-                        data: data.prices,
-                        borderColor: 'blue',
-                        fill: false,
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                        }
-                    }
-                }
-            });
-        }
-    </script> -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fetch available stocks and populate the dropdown menu
-            fetchAvailableStocks();
-        });
-
-        function fetchAvailableStocks() {
-            fetch('/api/available-stocks')
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    const stockDropdown = document.getElementById('stockDropdown');
-                    // Clear existing options first
-                    stockDropdown.innerHTML = '<option value="">Select a stock...</option>';
-                    // Populate dropdown with available stocks
-                    data.stocks.forEach(stock => {
-                        const option = document.createElement('option');
-                        option.value = stock;
-                        option.textContent = `${stock}`;
-                        stockDropdown.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error fetching available stocks:', error));
-        }
-
-        function fetchStockPrice() {
-            const selectedStock = document.getElementById('stockDropdown').value;
-            const customStock = document.getElementById('customStockInput').value;
-            const stockSymbol = customStock || selectedStock;
-            if (!stockSymbol) {
-                alert('Please select or enter a stock symbol.');
-                return;
-            }
-            fetch(`/api/stock-data/${stockSymbol}`)
-                .then(response => response.json())
-                .then(data => {
-                    renderStockPriceChart(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching stock price:', error);
-                    alert('Failed to fetch stock price. Please try again later.');
-                });
-        }
-
-        function renderStockPriceChart(data) {
-            const ctx = document.getElementById('stockPriceChartId').getContext('2d');
-            // Clear existing chart if any
-            if (window.stockPriceChart) {
-                window.stockPriceChart.destroy();
-            }
-            window.stockPriceChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.dates,
-                    datasets: [{
-                        // label: `${data.symbol} Price Chart`,
-                        data: data.prices,
-                        borderColor: 'blue',
-                        fill: false,
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                        }
-                    }
-                }
-            });
-        }
-
-    </script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/asset-display.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/lists.js') }}"></script>
 </body>
 </html>

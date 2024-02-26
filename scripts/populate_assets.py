@@ -1,7 +1,7 @@
 from app.extensions import db 
 from app.models import Asset
 from app.stock_data import get_all_stocks, get_all_crypto_symbols
-from run import create_app
+from app.app import create_app
 
 app = create_app()
 

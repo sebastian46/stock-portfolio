@@ -17,7 +17,6 @@ class AssetService:
 
     @staticmethod
     def get_asset_data(ticker, asset_type):
-        # Pseudo-code for fetching data based on asset_type
         if asset_type == 'stock':
             return get_stock_data_api(ticker)
         elif asset_type == 'crypto':

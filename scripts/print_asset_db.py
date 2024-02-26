@@ -1,5 +1,5 @@
 from app.models import Asset
-from run import create_app
+from app.app import create_app
 
 app = create_app()
 

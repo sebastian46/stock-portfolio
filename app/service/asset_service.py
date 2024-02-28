@@ -16,7 +16,7 @@ class AssetService:
         return [asset.identifier for asset in assets]
     
     @staticmethod
-    def fetch_asset_data(ticker, asset_type):
+    def get_asset_data(ticker, asset_type):
         # This method only fetches data and can be used internally
         if asset_type == 'stock':
             return get_stock_data_api(ticker)
@@ -26,9 +26,9 @@ class AssetService:
             return None  # or raise an Exception
 
     @staticmethod
-    def get_asset_data_for_api(ticker, asset_type):
+    def get_asset_data_api(ticker, asset_type):
         # This method is specifically for the API and returns JSON responses
-        data = AssetService.fetch_asset_data(ticker, asset_type)
+        data = AssetService.get_asset_data(ticker, asset_type)
         if data is not None:
             return jsonify(data)
         else:

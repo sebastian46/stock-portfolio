@@ -24,7 +24,7 @@ class PortfolioService:
         return new_portfolio
 
     @staticmethod
-    def list_portfolios():
+    def get_all_portfolios():
         portfolios = Portfolio.query.all()
         return [{'id': portfolio.id, 'name': portfolio.name} for portfolio in portfolios]
 
@@ -41,7 +41,7 @@ class PortfolioService:
             ticker = asset.identifier
             asset_type = asset.type
 
-            data = AssetService.fetch_asset_data(ticker, asset_type)
+            data = AssetService.get_asset_data(ticker, asset_type)
             data = pd.Series(data['prices'], index=data['dates'])
             prices[ticker] = data
 

@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = { name: listName, assets: assets };
         console.log(data);
         // Send the data to the server
-        fetch('/api/create-list', {
+        fetch('/api/portfolio', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchStockLists() {
-    fetch('/api/create-list')
+    fetch('/api/portfolio')
         .then(response => response.json())
         .then(data => {
             console.log(data)

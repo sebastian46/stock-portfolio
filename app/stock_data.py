@@ -4,8 +4,6 @@ from get_all_tickers import get_tickers as gt
 
 from datetime import date
 import pandas as pd
-from .models import StockList, Portfolio, PortfolioAsset
-from .extensions import db
 import ccxt
 
 def get_stock_data_api(ticker):
@@ -16,42 +14,7 @@ def get_stock_data_api(ticker):
         "dates": hist.index.strftime('%Y-%m-%d').tolist(),
         "prices": hist['Close'].tolist()
     }
-    return jsonify(data)
-
-def get_stock_list_returns():
-    data = request.json
-    portfolio_id  = data.get('listId')  # Assuming the request contains a 'listId'
-
-    # Query the StockList model to get the list by name
-    portfolio = Portfolio.query.filter_by(id=portfolio_id).first()
-    if not portfolio:
-        return jsonify({"error": "Stock list not found"}), 404
-    
-    start_date = data.get('start', '2020-01-06')  # Default start date
-    end_date = data.get('end', date.today().strftime('%Y-%m-%d'))  # Default end date
-    
-    prices = pd.DataFrame()
-    for portfolio_asset in portfolio.assets:
-        asset = portfolio_asset.asset
-        ticker = asset.identifier  # Use the asset's identifier as the ticker
-
-        # Fetch historical data for the ticker
-        stock = yf.Ticker(ticker)
-        hist = stock.history(start=start_date, end=end_date)
-        prices[ticker] = hist['Close']
-
-        
-    returns = prices.pct_change().dropna()
-    portfolio_returns = returns.mean(axis=1)
-    
-    cumulative_returns = (portfolio_returns + 1).cumprod()
-    percentage_returns = cumulative_returns * 100 - 100 # Convert to percentage
-
-    response_data = {
-        "dates": cumulative_returns.index.strftime('%Y-%m-%d').tolist(),
-        "returns": percentage_returns.tolist()
-    }
-    return jsonify(response_data)
+    return data
 
 def get_all_stocks():
     import pandas as pd

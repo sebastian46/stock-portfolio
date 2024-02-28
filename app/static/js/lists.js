@@ -1,6 +1,47 @@
 document.addEventListener('DOMContentLoaded', function() {
     fetchStockLists();
+    document.getElementById('addTickerBtn').addEventListener('click', function() {
+        addTickerInput(); // Add new ticker input when "+" button is clicked
+    });
     document.getElementById('listSelector').addEventListener('change', handleListSelectionChange);
+    document.getElementById('createListForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent the form from submitting the traditional way
+        
+        const listName = document.getElementById('listName').value.trim();
+        const tickerType = document.getElementById('tickerType').value;
+        const tickersInputs = document.querySelectorAll('#tickersContainer .tickerInput'); // Ensure the selector matches the class or id of the inputs
+    
+        const assets = Array.from(tickersInputs).map(input => ({
+            ticker: input.value.trim(),
+            type: tickerType // If each ticker can have a different type, this needs to be adjusted
+        }));
+
+        // Validate that listName and assets are filled out correctly
+        if (!listName || assets.some(asset => !asset.ticker)) {
+            alert('Please fill out all fields.');
+            return;
+        }
+
+        const data = { name: listName, assets: assets };
+        console.log(data);
+        // Send the data to the server
+        fetch('/api/create-list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('List created:', data);
+            // Handle success, such as notifying the user or clearing the form
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            // Handle errors, such as displaying a message to the user
+        });
+    });
 });
 
 function fetchStockLists() {
@@ -81,35 +122,13 @@ function fetchStockListReturnsAndRenderGraph(listId) {
 
     });
 }
-document.getElementById('createListForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Prevent the form from submitting the traditional way
-    
-    const listName = document.getElementById('listName').value;
-    const listTickers = document.getElementById('listTickers').value.split(',');
-    const tickerType = document.getElementById('tickerType').value; // Assuming a single type for all tickers for simplicity
 
-    const assets = listTickers.map(ticker => ({
-        ticker: ticker.trim(),
-        type: tickerType // This assumes all tickers in the input are of the same type; adjust if needed
-    }));
 
-    const data = { name: listName, assets: assets };
-
-    // Send the data to the server
-    fetch('/api/create-list', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('List created:', data);
-        // Handle success
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-        // Handle errors
-    });
-});
+// This function should create a new input element for ticker and append it to the tickersContainer
+function addTickerInput() {
+    const container = document.getElementById('tickersContainer');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control asset-input tickerInput'; // Use a class to group all ticker inputs
+    container.appendChild(input);
+}

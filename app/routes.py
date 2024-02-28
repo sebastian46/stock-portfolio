@@ -28,7 +28,7 @@ def get_available_assets(asset_type):
 
 @home_bp.route('/api/asset-data/<asset_type>/<path:identifier>', methods=['GET'])
 def asset_data(asset_type, identifier):
-    return AssetService.get_asset_data(identifier, asset_type)
+    return AssetService.get_asset_data_for_api(identifier, asset_type)
 
 @home_bp.route('/api/list-returns/<portfolio_id>', methods=['GET'])
 def list_returns(portfolio_id):

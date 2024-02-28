@@ -14,13 +14,22 @@ class AssetService:
             query = query.filter(Asset.identifier.like(f"%{search_query}%"))
         assets = query.all()
         return [asset.identifier for asset in assets]
-
+    
     @staticmethod
-    def get_asset_data(ticker, asset_type):
+    def fetch_asset_data(ticker, asset_type):
+        # This method only fetches data and can be used internally
         if asset_type == 'stock':
             return get_stock_data_api(ticker)
         elif asset_type == 'crypto':
-            # Assuming get_crypto_data_api can handle the ticker format directly
             return get_crypto_data_api(ticker)
+        else:
+            return None  # or raise an Exception
+
+    @staticmethod
+    def get_asset_data_for_api(ticker, asset_type):
+        # This method is specifically for the API and returns JSON responses
+        data = AssetService.fetch_asset_data(ticker, asset_type)
+        if data is not None:
+            return jsonify(data)
         else:
             return jsonify({'error': 'Unsupported asset type'}), 400

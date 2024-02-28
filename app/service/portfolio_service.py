@@ -1,7 +1,7 @@
 from ..models import Asset, Portfolio, PortfolioAsset
 from .. import db
 import pandas as pd
-import yfinance as yf
+from .asset_service import AssetService
 
 class PortfolioService:
     @staticmethod
@@ -35,18 +35,22 @@ class PortfolioService:
             return {"error": "Portfolio not found"}, 404
         
         prices = pd.DataFrame()
+        # Get returns for assets
         for portfolio_asset in portfolio.assets:
             asset = portfolio_asset.asset
-            ticker = asset.identifier  # Use the asset's identifier as the ticker
+            ticker = asset.identifier
+            asset_type = asset.type
 
-            # Fetch historical data for the ticker
-            stock = yf.Ticker(ticker)
-            hist = stock.history(start=start_date, end=end_date)
-            if not hist.empty:
-                prices[ticker] = hist['Close']
+            data = AssetService.fetch_asset_data(ticker, asset_type)
+            data = pd.Series(data['prices'], index=data['dates'])
+            prices[ticker] = data
 
         if prices.empty:
             return {"error": "No historical data found for the given period"}, 404
+        
+        # Ensure the index is a DatetimeIndex
+        if not isinstance(prices.index, pd.DatetimeIndex):
+            prices.index = pd.to_datetime(prices.index)
 
         returns = prices.pct_change().dropna()
         portfolio_returns = returns.mean(axis=1)

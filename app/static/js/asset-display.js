@@ -56,7 +56,7 @@ function clearSuggestions(suggestionsBoxId) {
 function fetchAssetPrice(assetType) {
     const assetGroup = document.querySelector(`.asset-input-group[data-asset-type="${assetType}"]`);
     const assetInput = assetGroup.querySelector('.asset-input').value;
-    // const customInput = assetGroup.querySelector('.form-control').value;
+    const customInput = assetGroup.querySelector('.form-control').value;
     const assetSymbol = assetInput || customInput;
     const url = `api/asset-data/${assetType}/${assetSymbol}`;
 
